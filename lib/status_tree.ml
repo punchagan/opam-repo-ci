@@ -49,12 +49,12 @@ let filter ?(inv=false) f ts =
             else
               if f k then Some t else None
           | Branch (k, y, ts) ->
-            Option.map (fun ts -> Branch (k, y, ts)) @@ aux ts)
+            Stdlib.Option.map (fun ts -> Branch (k, y, ts)) @@ aux ts)
           ts
       in
       if res = [] then None else Some res
   in
-  Option.value ~default:[] @@ aux ts
+  Stdlib.Option.value ~default:[] @@ aux ts
 
 let partition f ts =
   filter f ts, filter ~inv:true f ts
