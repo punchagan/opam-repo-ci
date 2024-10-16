@@ -17,7 +17,7 @@ type opam_build = {
   revdep : package option;
   with_tests : bool;
   lower_bounds : bool;
-  opam_version : Opam_version.t;
+  opam_version : Opam_ci_check.Opam_version.t;
 }
 
 (** Configuration for a [list_revdeps] job *)
@@ -30,14 +30,14 @@ type ty = [
   `Opam of [ `Build of opam_build | `List_revdeps of list_revdeps ] * package
 ] [@@deriving to_yojson]
 
-type t = { variant : Variant.t; ty : ty; }
+type t = { variant : Opam_ci_check.Variant.t; ty : ty; }
 
 (** Generate configuration for an [opam_build] job *)
 val opam :
   ?revdep:package ->
-  variant:Variant.t ->
+  variant:Opam_ci_check.Variant.t ->
   lower_bounds:bool ->
-  with_tests:bool -> opam_version:Opam_version.t -> package -> t
+  with_tests:bool -> opam_version:Opam_ci_check.Opam_version.t -> package -> t
 
 val pp_ty :
   Format.formatter ->

@@ -1,3 +1,5 @@
+open Opam_ci_check
+
 (* TODO: Make macOS use docker images *)
 type base =
   | Docker of Current_docker.Raw.Image.t

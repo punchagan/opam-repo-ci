@@ -29,8 +29,8 @@ val v :
   the job specified by [after], making it a dependency. *)
 val list_revdeps :
   t ->
-  variant:Variant.t ->
-  opam_version:Opam_version.t ->
+  variant:Opam_ci_check.Variant.t ->
+  opam_version:Opam_ci_check.Opam_version.t ->
   pkgopt:Package_opt.t Current.t ->
   new_pkgs:OpamPackage.t list Current.t ->
   base:Spec.base Current.t ->
