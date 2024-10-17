@@ -41,6 +41,8 @@ let show_revdeps pkg local_repo_dir no_transitive_revdeps =
 let testing_revdeps_confirmed revdeps =
   OpamConsole.confirm "Do you want test %d revdeps?" (List.length revdeps)
 
+let make_spec = Test.make_spec
+
 let test_revdeps pkg local_repo_dir use_dune no_transitive_revdeps =
   (* Get revdeps for the package *)
   let revdeps =
@@ -181,11 +183,19 @@ let test_cmd =
   in
   Cmd.v info term
 
+let build_test_cmd =
+  let doc = "Build and test a package" in
+  let term = Term.(const make_spec $ pkg_term) |> to_exit_code in
+  let info =
+    Cmd.info "build-test" ~doc ~sdocs:"COMMON OPTIONS" ~exits:Cmd.Exit.defaults
+  in
+  Cmd.v info term
+
 let cmd : Cmd.Exit.code Cmd.t =
   let doc = "A tool to list revdeps and test the revdeps locally" in
   let exits = Cmd.Exit.defaults in
   let default = Term.(ret (const (fun _ -> `Help (`Pager, None)) $ const ())) in
   let info = Cmd.info "opam-ci-check" ~doc ~sdocs:"COMMON OPTIONS" ~exits in
-  Cmd.group ~default info [ lint_cmd; list_cmd; test_cmd ]
+  Cmd.group ~default info [ lint_cmd; list_cmd; test_cmd; build_test_cmd ]
 
 let () = exit (Cmd.eval' cmd)

@@ -71,3 +71,19 @@ let test_packages_with_dune opam_repository target_pkg packages =
   in
   List.iter H.generate_lock_and_build dirs;
   Ok ()
+
+let make_spec pkg =
+  let pkg = OpamPackage.of_string pkg in
+  let variant =
+    Variant.v ~distro:"debian-12" ~compiler:("5.2", None) ~arch:`X86_64
+  in
+  let base = "ocaml/opam:" ^ Variant.docker_tag variant in
+  let spec =
+    Opam_build.spec ~local:true ~for_docker:true ~opam_version:`Dev ~base
+      ~variant ~revdep:None ~lower_bounds:false ~with_tests:false ~pkg ()
+  in
+  let spec_dockerfile =
+    Obuilder_spec.Docker.dockerfile_of_spec ~buildkit:true ~os:`Unix spec
+  in
+  print_endline spec_dockerfile;
+  Ok ()

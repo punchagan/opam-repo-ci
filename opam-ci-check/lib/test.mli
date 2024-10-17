@@ -21,3 +21,5 @@ val test_packages_with_opam : string -> OpamPackage.t list -> error Seq.t
 
 val test_packages_with_dune :
   string -> string -> OpamPackage.t list -> (unit, 'a) result
+
+val make_spec : string -> (unit, 'a) result
