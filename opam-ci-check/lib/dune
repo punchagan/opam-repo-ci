@@ -7,6 +7,8 @@
   opam-format
   opam-state
   sexplib
+  bos
+  fpath
   str
   ocaml-version
   obuilder-spec))
