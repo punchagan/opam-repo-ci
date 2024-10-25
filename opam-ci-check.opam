@@ -30,6 +30,7 @@ depends: [
   "odoc" {with-doc}
   "ppx_deriving" {>= "5.2.1"}
   "ppx_deriving_yojson"
+  "alcotest" {>= "1.0.0" & with-test}
 ]
 build: [
   ["dune" "subst"] {dev}

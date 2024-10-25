@@ -1,7 +1,7 @@
 (test
  (name test_opam_ci_check)
  (package opam-ci-check)
- (libraries opam_ci_check))
+ (libraries opam_ci_check alcotest))
 
 (cram
  (package opam-ci-check)
