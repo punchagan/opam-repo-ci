@@ -324,7 +324,8 @@ module Checks = struct
     let dash_underscore p0 p1 =
       let f = function
         | '_' | '-' -> None
-        | c -> Some (Char.lowercase_ascii c) in
+        | c -> Some (Char.lowercase_ascii c)
+      in
       let p0 = p0 |> String.to_seq |> Seq.filter_map f in
       let p1 = p1 |> String.to_seq |> Seq.filter_map f in
       Seq.equal Char.equal p0 p1
