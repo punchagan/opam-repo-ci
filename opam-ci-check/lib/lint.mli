@@ -4,6 +4,20 @@
 
 include module type of Lint_error
 
+module TypoGuard : sig
+  val repeated_chars :
+    other_names:string list -> OpamPackage.t -> (OpamPackage.t * error) list
+
+  val omitted_chars :
+    other_names:string list -> OpamPackage.t -> (OpamPackage.t * error) list
+
+  val swapped_chars :
+    other_names:string list -> OpamPackage.t -> (OpamPackage.t * error) list
+
+  val swapped_words :
+    other_names:string list -> OpamPackage.t -> (OpamPackage.t * error) list
+end
+
 module Checks : sig
   val package_name_collision : string -> string -> bool
   (** [package_name_collision p0 p1] returns true if [p0] is similar to [p1].

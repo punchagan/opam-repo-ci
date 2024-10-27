@@ -36,6 +36,7 @@ type error =
   | PrefixConflictClassMismatch of prefix_conflict_class_mismatch
   | ParseError
   | DefaultTagsPresent of string list
+  | TypoSquat of string * string
 
 (**/**)
 
@@ -162,3 +163,5 @@ let msg_of_error (package, (err : error)) =
         "Warning in %s: The package has not replaced the following default, \
          example tags: %s"
         pkg (String.concat ", " tags)
+  | TypoSquat (code, other_pkg) ->
+      Printf.sprintf "Error in %s: TypoSquat '%s' (%s) " pkg other_pkg code

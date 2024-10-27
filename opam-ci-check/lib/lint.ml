@@ -10,6 +10,95 @@ let get_files dir = dir |> Sys.readdir |> Array.to_list
 
 include Lint_error
 
+module TypoGuard = struct
+  (*TODO: Do we need case sensitive stuff? We are only checking against lower
+    case names anyway?*)
+  let allowed_characters =
+    "+-_0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuvVwxXyYzZ"
+
+  (** Removes any identical consecutive characters to check for typosquatting
+      by repeated characters. For example, 'reeact' could be typosquatting
+      'react'. *)
+  let repeated_chars ~other_names pkg =
+    let pkg_name = OpamPackage.name_to_string pkg in
+    let repeats_removed s =
+      let n = String.length s in
+      let chars = String.to_seq s |> List.of_seq in
+      List.mapi
+        (fun i char ->
+          let j = i + 1 in
+          if j < n && String.sub s j 1 = Char.escaped char then
+            Some
+              (let r = n - 1 - j in
+               let prefix = String.sub s 0 j in
+               let suffix = if r > 0 then String.sub s (j + 1) r else "" in
+               prefix ^ suffix)
+          else None)
+        chars
+      |> List.filter_map (fun x -> x)
+    in
+    let pkg_name_lower = String.lowercase_ascii pkg_name in
+    let names = repeats_removed pkg_name_lower in
+    List.filter_map
+      (fun name ->
+        if List.mem name other_names then
+          Some (pkg, TypoSquat ("repeated-characters", name))
+        else None)
+      names
+
+  (** Inserts allowed characters into the name in all positions to check for
+      typosquatting by omission. For example, 'evnt-stream' could be
+      typosquatting 'event-stream'. *)
+  let omitted_chars ~other_names pkg =
+    (* TODO: Experiment with this!!! *)
+    (* Do not apply this check to short package names. *)
+    (* This helps reduce the false positive rate *)
+    let pkg_name = OpamPackage.name_to_string pkg in
+    String.to_seq allowed_characters
+    |> List.of_seq
+    |> List.map (fun char ->
+           let n = String.length pkg_name in
+           List.init (n + 1) (fun i ->
+               let prefix = String.sub pkg_name 0 i in
+               let suffix = String.sub pkg_name i (n - i) in
+               prefix ^ Char.escaped char ^ suffix))
+    |> List.concat
+    |> List.filter_map (fun name ->
+           if List.mem name other_names then
+             Some (pkg, TypoSquat ("omitted-characters", name))
+           else None)
+
+  (* Swaps consecutive characters in the given package_name to search for
+     typosquatting. Returns a list of potential targets from the given
+     popular_package_set. For example, 'loadsh' is typosquatting 'lodash'. *)
+  let swapped_chars ~other_names pkg =
+    let pkg_name = OpamPackage.name_to_string pkg in
+    let n = String.length pkg_name in
+    let swap s i =
+      String.sub s 0 i
+      ^ String.sub s (i + 1) 1
+      ^ String.sub s i 1
+      ^ if i + 2 < n then String.sub s (i + 2) (String.length s - i - 2) else ""
+    in
+    List.init (n - 1) (fun i -> swap pkg_name i)
+    |> List.filter_map (fun name ->
+           if List.mem name other_names then
+             Some (pkg, TypoSquat ("swapped-characters", name))
+           else None)
+
+  let check_typo_squatting ~pkg repo_packages _opam =
+    let pkg_name = OpamPackage.name_to_string pkg in
+    let other_names =
+      List.filter_map
+        (function
+          | s when String.equal s pkg_name -> None
+          | s -> Some (String.lowercase_ascii s))
+        repo_packages
+    in
+    let checks = [ repeated_chars; omitted_chars; swapped_chars ] in
+    List.concat_map (fun f -> f ~other_names pkg) checks
+end
+
 module Checks = struct
   module Prefix = struct
     (* For context, see https://github.com/ocurrent/opam-repo-ci/pull/316#issuecomment-2160069803 *)
@@ -265,20 +354,17 @@ module Checks = struct
         if is_build then (pkg, DuneIsBuild) :: errors else errors
     | None -> []
 
-
   let check_maintainer_contact ~pkg opam =
     let is_present bug_reports = bug_reports <> [] in
     let includes_an_email maintainers =
       List.exists
-          (fun m -> Str.string_match (Str.regexp ".*<?.*@.*>?") m 0)
-          maintainers
+        (fun m -> Str.string_match (Str.regexp ".*<?.*@.*>?") m 0)
+        maintainers
     in
     let bug_reports = OpamFile.OPAM.bug_reports opam in
     let maintainers = OpamFile.OPAM.maintainer opam in
-    if is_present bug_reports || includes_an_email maintainers then
-      []
-    else
-      [ (pkg, MaintainerWithoutContact maintainers) ]
+    if is_present bug_reports || includes_an_email maintainers then []
+    else [ (pkg, MaintainerWithoutContact maintainers) ]
 
   let check_tags ~pkg opam =
     (* Check if any of the default tags are present *)
@@ -348,7 +434,11 @@ module Checks = struct
 
   let checks ~newly_published ~repo_dir packages =
     let newly_published_checks =
-      [ check_name_collisions packages; Prefix.check_name_restricted_prefix ]
+      [
+        check_name_collisions packages;
+        Prefix.check_name_restricted_prefix;
+        TypoGuard.check_typo_squatting packages;
+      ]
     in
     let checks =
       [
