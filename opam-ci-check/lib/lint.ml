@@ -86,6 +86,45 @@ module TypoGuard = struct
              Some (pkg, TypoSquat ("swapped-characters", name))
            else None)
 
+  (* Reorders package_name substrings separated by delimiters to look for
+     typosquatting. Also check for delimiter substitution and omission. For
+     example, 'stream-event' and 'event.stream' are typosquatting
+     'event-stream'. *)
+  let swapped_words ~other_names pkg =
+    let pkg_name = OpamPackage.name_to_string pkg in
+    (* let n = String.length pkg_name in *)
+    (* let delimiters = [ "-"; "."; "_" ] in *)
+    let delimiter_regexp = Str.regexp "[-._]" in
+    match Str.search_forward delimiter_regexp pkg_name 0 with
+    | exception Not_found -> []
+    | i ->
+        let parts = Str.split delimiter_regexp pkg_name in
+        (* Permutations of the parts *)
+        let permutations = List.permute parts in
+        print_endline pkg_name;
+        print_endline "found delimiter";
+        print_endline @@ Printf.sprintf "Pos: %d" i;
+        print_int (List.length other_names);
+        []
+  (* let swap s i = *)
+  (*   let delimiter = String.sub s i 1 in *)
+  (*   let parts = String.split_on_char delimiter.[0] s in *)
+  (*   List.mapi *)
+  (*     (fun j part -> *)
+  (*       let prefix = String.concat "" (List.take parts j) in *)
+  (*       let suffix = String.concat "" (List.drop parts (j + 1)) in *)
+  (*       prefix ^ delimiter ^ part ^ suffix) *)
+  (*     parts *)
+  (* in *)
+  (* List.concat_map *)
+  (*   (fun delimiter -> *)
+  (*     List.init (n - 1) (fun i -> swap pkg_name i) *)
+  (*     |> List.filter_map (fun name -> *)
+  (*            if List.mem name other_names then *)
+  (*              Some (pkg, TypoSquat ("swapped-words", name)) *)
+  (*            else None)) *)
+  (*   delimiters *)
+
   let check_typo_squatting ~pkg repo_packages _opam =
     let pkg_name = OpamPackage.name_to_string pkg in
     let other_names =
@@ -95,7 +134,9 @@ module TypoGuard = struct
           | s -> Some (String.lowercase_ascii s))
         repo_packages
     in
-    let checks = [ repeated_chars; omitted_chars; swapped_chars ] in
+    let checks =
+      [ repeated_chars; omitted_chars; swapped_chars; swapped_words ]
+    in
     List.concat_map (fun f -> f ~other_names pkg) checks
 end
 
