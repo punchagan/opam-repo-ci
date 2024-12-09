@@ -5,13 +5,6 @@ set -euo pipefail
 export OPAMROOT=$HOME/code/segfault/opam-repo-ci/.opam-revdeps/
 export OPAMSWITCH=default
 
-PKG="${1:-}"
-
-if [ -z "${PKG}" ]; then
-  echo "Need a pkg name with version!"
-  exit 1
-fi
-
 function revdeps_opam() {
   REVDEPS=$(opam list -s --color=never --depends-on "$1" --coinstallable-with "$1" --all-versions --depopts;
             opam list -s --color=never --depends-on "$1" --coinstallable-with "$1" --all-versions --recursive;
@@ -46,4 +39,7 @@ function compare_revdeps {
 }
 
 mkdir -p exp/
-compare_revdeps "$PKG"
+
+for pkg in "lwt.5.7.0" "opam-format.2.2.1" "angstrom.0.16.0"; do
+  compare_revdeps "$pkg"
+done
