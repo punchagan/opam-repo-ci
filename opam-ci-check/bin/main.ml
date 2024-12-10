@@ -87,12 +87,12 @@ let lint package_specs local_repo_dir =
           |> Printf.sprintf "%s\n" |> Result.error
       | Error _ as e -> e)
 
-let show_revdeps pkg local_repo_dir no_transitive_revdeps =
+let show_revdeps pkg local_repo_dir no_transitive_revdeps use_default_root =
   (* Get revdeps for the package *)
   let revdeps =
     Revdeps.list_revdeps ?opam_repo:local_repo_dir
       ~transitive:(not no_transitive_revdeps)
-      pkg
+      ~use_default_root pkg
   in
   Revdeps.Display.packages revdeps;
   Ok ()
@@ -184,6 +184,13 @@ let no_transitive_revdeps =
       ~doc:
         "Don't test transitive reverse dependencies - only test the direct \
          reverse dependencies."
+  in
+  Arg.value (Arg.flag info)
+
+let use_default_root =
+  let info =
+    Arg.info [ "use-default-root" ]
+      ~doc:"Use the default opam root in ~/.opam instead of creating a new one."
   in
   Arg.value (Arg.flag info)
 
@@ -305,7 +312,7 @@ let list_cmd =
   let term =
     Term.(
       const show_revdeps $ pkg_term $ local_opam_repo_term
-      $ no_transitive_revdeps)
+      $ no_transitive_revdeps $ use_default_root)
     |> to_exit_code
   in
   let info =
